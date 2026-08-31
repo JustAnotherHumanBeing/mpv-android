@@ -31,6 +31,7 @@ import androidx.core.content.ContextCompat
 import android.view.*
 import android.view.ViewGroup.MarginLayoutParams
 import android.widget.Button
+import android.widget.RelativeLayout
 import android.widget.SeekBar
 import android.widget.Toast
 import androidx.activity.addCallback
@@ -1019,6 +1020,8 @@ class MPVActivity : AppCompatActivity(), MPVLib.EventObserver, TouchGesturesObse
             }
             rightMargin = leftMargin
         }
+
+        updateDirectVideoGeometry()
     }
 
     private fun onPiPModeChangedImpl(state: Boolean) {
@@ -1794,6 +1797,38 @@ class MPVActivity : AppCompatActivity(), MPVLib.EventObserver, TouchGesturesObse
             ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
     }
 
+    private fun updateDirectVideoGeometry() {
+        if (!binding.directVideoSurface.isVisible)
+            return
+
+        val videoAspect = player.getVideoAspect() ?: return
+        if (!videoAspect.isFinite() || videoAspect <= 0.0)
+            return
+
+        binding.root.post {
+            val parentWidth = binding.root.width
+            val parentHeight = binding.root.height
+            if (parentWidth <= 0 || parentHeight <= 0)
+                return@post
+
+            val parentAspect = parentWidth.toDouble() / parentHeight
+            val (width, height) = if (videoAspect > parentAspect) {
+                Pair(parentWidth,
+                    (parentWidth / videoAspect).roundToInt().coerceIn(1, parentHeight))
+            } else {
+                Pair((parentHeight * videoAspect).roundToInt().coerceIn(1, parentWidth),
+                    parentHeight)
+            }
+
+            binding.directVideoSurface.updateLayoutParams<RelativeLayout.LayoutParams> {
+                this.width = width
+                this.height = height
+            }
+            Log.v(TAG, "Direct video surface geometry: ${width}x$height " +
+                "in ${parentWidth}x$parentHeight (aspect $videoAspect)")
+        }
+    }
+
     @RequiresApi(26)
     private fun makeRemoteAction(@DrawableRes icon: Int, @StringRes title: Int, intentAction: String): RemoteAction {
         val intent = NotificationButtonReceiver.createIntent(this, intentAction)
@@ -1922,6 +1957,7 @@ class MPVActivity : AppCompatActivity(), MPVLib.EventObserver, TouchGesturesObse
             "video-params/aspect", "video-params/rotate" -> {
                 updateOrientation()
                 updatePiPParams()
+                updateDirectVideoGeometry()
             }
         }
     }
