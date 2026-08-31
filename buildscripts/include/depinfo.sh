@@ -44,9 +44,9 @@ dep_mpv_android=(mpv)
 # Frozen Shield Dolby Vision diagnostic revisions.
 v_ci_arch=arm64
 v_ci_ffmpeg_repo=https://github.com/JustAnotherHumanBeing/FFmpeg.git
-v_ci_ffmpeg=a5b6592a7160c438c4bd5904863b89b341478552
+v_ci_ffmpeg=fcd628b64dcd64b3325294866c4edd2990637c9c
 v_ci_mpv_repo=https://github.com/JustAnotherHumanBeing/mpv.git
-v_ci_mpv=9fae3179fe820a901b3c5618d7dcae3f2388b9e2
+v_ci_mpv=83d5ddbc1c6fb5b5a998b1a636a5b273497535fd
 v_ci_libplacebo_repo=https://github.com/JustAnotherHumanBeing/libplacebo.git
 v_ci_libplacebo=b3ff1dbe73de8e75bda36836f7b1b5a2e00068f1
 
