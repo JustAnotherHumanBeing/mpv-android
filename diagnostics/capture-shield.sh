@@ -14,6 +14,21 @@ output=$4
 script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 config="$script_dir/configs/test-${test_id}.conf"
 remote_config="/data/local/tmp/mpv-dovi-${package}-${test_id}.conf"
+logcat_pid=
+
+stop_logcat()
+{
+    if [ -n "$logcat_pid" ]; then
+        kill "$logcat_pid" 2>/dev/null || true
+        wait "$logcat_pid" 2>/dev/null || true
+        logcat_pid=
+    fi
+}
+
+trap stop_logcat EXIT
+trap 'exit 129' HUP
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
 case "$package" in
     ''|*[!A-Za-z0-9._]*)
@@ -45,6 +60,9 @@ adb shell run-as "$package" cp "$remote_config" files/mpv.conf
 adb shell rm -f "$remote_config"
 adb exec-out run-as "$package" cat files/mpv.conf | cmp - "$config"
 adb logcat -c
+adb logcat -v threadtime >"$output/${test_id}-logcat.txt" &
+logcat_pid=$!
+sleep 1
 adb shell getprop >"$output/${test_id}-getprop.txt"
 adb shell dumpsys display >"$output/${test_id}-display.txt"
 adb shell dumpsys media.codec >"$output/${test_id}-media-codec.txt"
@@ -57,7 +75,7 @@ adb shell am start -W -a android.intent.action.VIEW \
 echo "Observe test ${test_id}; record the television mode, then press Enter." >&2
 read -r answer
 
-adb logcat -d -v threadtime >"$output/${test_id}-logcat.txt"
+stop_logcat
 adb shell dumpsys SurfaceFlinger >"$output/${test_id}-surfaceflinger.txt"
 adb shell dumpsys media.codec >"$output/${test_id}-media-codec-after.txt"
 adb shell dumpsys meminfo "$package" >"$output/${test_id}-meminfo.txt"
