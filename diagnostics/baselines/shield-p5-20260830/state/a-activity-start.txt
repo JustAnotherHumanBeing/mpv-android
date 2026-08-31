@@ -1,0 +1,7 @@
+Starting: Intent { act=android.intent.action.VIEW dat=file:///sdcard/Movies/p5-smoke-s01e01-60s.mkv typ=video/x-matroska cmp=is.xyz.mpv.dovitest/is.xyz.mpv.MPVActivity }
+Status: ok
+LaunchState: COLD
+Activity: is.xyz.mpv.dovitest/is.xyz.mpv.MPVActivity
+TotalTime: 1336
+WaitTime: 1338
+Complete
