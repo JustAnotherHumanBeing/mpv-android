@@ -46,7 +46,7 @@ v_ci_arch=arm64
 v_ci_ffmpeg_repo=https://github.com/JustAnotherHumanBeing/FFmpeg.git
 v_ci_ffmpeg=d7f70632b1206ba2526853bb4bf50735ff5f833f
 v_ci_mpv_repo=https://github.com/JustAnotherHumanBeing/mpv.git
-v_ci_mpv=c5dc65d92859a62430b66ce847cbe23b49b615e5
+v_ci_mpv=9fae3179fe820a901b3c5618d7dcae3f2388b9e2
 v_ci_libplacebo_repo=https://github.com/JustAnotherHumanBeing/libplacebo.git
 v_ci_libplacebo=b3ff1dbe73de8e75bda36836f7b1b5a2e00068f1
 
