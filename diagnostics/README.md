@@ -58,6 +58,9 @@ cd mpv-android
 buildscripts/include/ci.sh install
 DONT_BUILD_RELEASE=1 buildscripts/include/ci.sh build
 adb install -r app/build/outputs/apk/default/debug/app-default-arm64-v8a-debug.apk
+adb shell pm grant is.xyz.mpv.dovitest android.permission.READ_EXTERNAL_STORAGE
+adb shell mkdir -p /sdcard/Movies
+adb push /path/to/p5-smoke-s01e01-60s.mkv /sdcard/Movies/
 ```
 
 For each run, put the sample at a Shield-accessible URI and invoke the capture

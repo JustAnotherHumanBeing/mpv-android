@@ -13,6 +13,22 @@ media_uri=$3
 output=$4
 script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 config="$script_dir/configs/test-${test_id}.conf"
+remote_config="/data/local/tmp/mpv-dovi-${package}-${test_id}.conf"
+
+case "$package" in
+    ''|*[!A-Za-z0-9._]*)
+        echo "invalid Android package name: $package" >&2
+        exit 64
+        ;;
+esac
+
+case "$test_id" in
+    a|b|c|d) ;;
+    *)
+        echo "unknown test ID: $test_id" >&2
+        exit 64
+        ;;
+esac
 
 if [ ! -f "$config" ]; then
     echo "unknown test ID: $test_id" >&2
@@ -23,8 +39,11 @@ mkdir -p "$output"
 cp "$config" "$output/${test_id}-mpv.conf"
 
 adb shell am force-stop "$package"
-adb shell run-as "$package" sh -c \
-    'mkdir -p files && cat >files/mpv.conf' <"$config"
+adb push "$config" "$remote_config" >/dev/null
+adb shell run-as "$package" mkdir -p files
+adb shell run-as "$package" cp "$remote_config" files/mpv.conf
+adb shell rm -f "$remote_config"
+adb exec-out run-as "$package" cat files/mpv.conf | cmp - "$config"
 adb logcat -c
 adb shell getprop >"$output/${test_id}-getprop.txt"
 adb shell dumpsys display >"$output/${test_id}-display.txt"
