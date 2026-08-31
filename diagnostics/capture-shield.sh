@@ -60,7 +60,14 @@ adb shell run-as "$package" cp "$remote_config" files/mpv.conf
 adb shell rm -f "$remote_config"
 adb exec-out run-as "$package" cat files/mpv.conf | cmp - "$config"
 adb logcat -c
-adb logcat -v threadtime >"$output/${test_id}-logcat.txt" &
+adb logcat -g >"$output/${test_id}-logcat-buffer.txt"
+adb logcat -v threadtime \
+    mpv:V ACodec:V MediaCodec:V OMXNodeInstance:V OMXMaster:V OMXClient:V \
+    NvOsDebugPrintf:V NvUtils:V VideoCapabilities:V Surface:V \
+    OpenGLRenderer:V SurfaceFlinger:V BufferQueueProducer:V \
+    BufferQueueConsumer:V gralloc:V libEGL:V '*:S' \
+    >"$output/${test_id}-logcat.txt" \
+    2>"$output/${test_id}-logcat-stderr.txt" &
 logcat_pid=$!
 sleep 1
 adb shell getprop >"$output/${test_id}-getprop.txt"
@@ -76,6 +83,10 @@ echo "Observe test ${test_id}; record the television mode, then press Enter." >&
 read -r answer
 
 stop_logcat
+if [ -s "$output/${test_id}-logcat-stderr.txt" ]; then
+    cat "$output/${test_id}-logcat-stderr.txt" >&2
+    exit 1
+fi
 adb shell dumpsys SurfaceFlinger >"$output/${test_id}-surfaceflinger.txt"
 adb shell dumpsys media.codec >"$output/${test_id}-media-codec-after.txt"
 adb shell dumpsys meminfo "$package" >"$output/${test_id}-meminfo.txt"
