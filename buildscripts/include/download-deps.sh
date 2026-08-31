@@ -7,6 +7,18 @@
 
 mkdir -p deps && cd deps
 
+clone_revision() {
+	repo=$1
+	revision=$2
+	destination=$3
+
+	[ -d "$destination" ] && return 0
+	git init "$destination"
+	git -C "$destination" remote add origin "$repo"
+	git -C "$destination" fetch --depth=1 origin "$revision"
+	git -C "$destination" checkout --detach FETCH_HEAD
+}
+
 # mbedtls
 if [ ! -d mbedtls ]; then
 	mkdir mbedtls
@@ -18,10 +30,10 @@ fi
 [ ! -d dav1d ] && git clone https://github.com/videolan/dav1d
 
 # ffmpeg
-if [ ! -d ffmpeg ]; then
-	args=()
-	[ $IN_CI -eq 1 ] && args+=(--depth=1 -b "$v_ci_ffmpeg")
-	git clone https://github.com/FFmpeg/FFmpeg ffmpeg "${args[@]}"
+if [ $IN_CI -eq 1 ]; then
+	clone_revision "$v_ci_ffmpeg_repo" "$v_ci_ffmpeg" ffmpeg
+else
+	[ ! -d ffmpeg ] && git clone https://github.com/FFmpeg/FFmpeg ffmpeg
 fi
 
 # freetype2
@@ -73,7 +85,12 @@ if [ ! -d lua ]; then
 fi
 
 # libplacebo
-[ ! -d libplacebo ] && git clone --recursive https://github.com/haasn/libplacebo
+if [ $IN_CI -eq 1 ]; then
+	clone_revision "$v_ci_libplacebo_repo" "$v_ci_libplacebo" libplacebo
+	git -C libplacebo submodule update --init --recursive --depth=1
+else
+	[ ! -d libplacebo ] && git clone --recursive https://github.com/haasn/libplacebo
+fi
 
 # curl
 if [ ! -d curl ]; then
@@ -83,6 +100,10 @@ if [ ! -d curl ]; then
 fi
 
 # mpv
-[ ! -d mpv ] && git clone https://github.com/mpv-player/mpv
+if [ $IN_CI -eq 1 ]; then
+	clone_revision "$v_ci_mpv_repo" "$v_ci_mpv" mpv
+else
+	[ ! -d mpv ] && git clone https://github.com/mpv-player/mpv
+fi
 
 cd ..

@@ -33,6 +33,13 @@ android {
         buildConfig = true
     }
 
+    buildTypes {
+        debug {
+            applicationIdSuffix ".dovitest"
+            versionNameSuffix "-dovitest"
+        }
+    }
+
     splits {
         abi {
             enable true

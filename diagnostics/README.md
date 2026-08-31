@@ -46,3 +46,26 @@ Each run must begin with a force-stop and use an explicit `hwdec` value.
 The reports and logs generated during testing belong in `reports/` and
 `logs/`. Test media belongs in `media/` and must never be committed.
 
+## Build and install
+
+The diagnostic branch builds only ARM64 and gives its debug APK the application
+ID `is.xyz.mpv.dovitest`, allowing it to coexist with the official app.
+
+```sh
+git clone --branch dovi-shield-integration \
+    https://github.com/JustAnotherHumanBeing/mpv-android.git
+cd mpv-android
+buildscripts/include/ci.sh install
+DONT_BUILD_RELEASE=1 buildscripts/include/ci.sh build
+adb install -r app/build/outputs/apk/default/debug/app-default-arm64-v8a-debug.apk
+```
+
+For each run, put the sample at a Shield-accessible URI and invoke the capture
+script with one of the lowercase IDs `a`, `b`, `c`, or `d`. The script
+force-stops the app, replaces its private `mpv.conf` through Android's
+debug-only `run-as` facility, clears logcat, and launches the media URI.
+
+```sh
+./diagnostics/capture-shield.sh is.xyz.mpv.dovitest b \
+    file:///sdcard/Movies/p5-smoke-s01e01-60s.mkv diagnostics/logs/b
+```

@@ -9,6 +9,18 @@ msg() {
 	printf '==> %s\n' "$1"
 }
 
+clone_revision() {
+	repo=$1
+	revision=$2
+	destination=$3
+
+	mkdir -p "$(dirname "$destination")"
+	git init "$destination"
+	git -C "$destination" remote add origin "$repo"
+	git -C "$destination" fetch --depth=1 origin "$revision"
+	git -C "$destination" checkout --detach FETCH_HEAD
+}
+
 fetch_prefix() {
 	if [[ "$CACHE_MODE" == folder ]]; then
 		local text=
@@ -32,7 +44,7 @@ build_prefix() {
 	IN_CI=1 ./include/download-deps.sh
 
 	msg "Compiling"
-	./buildall.sh --only-deps mpv
+	./buildall.sh --arch "$v_ci_arch" --only-deps mpv
 
 	if [[ "$CACHE_MODE" == folder && -w "$CACHE_FOLDER" ]]; then
 		msg "Compressing the prefix"
@@ -59,10 +71,7 @@ elif [ "$1" = "install" ]; then
 	IN_CI=1 ./include/download-sdk.sh
 
 	msg "Fetching mpv"
-	mkdir -p deps/mpv
-	$WGET https://github.com/mpv-player/mpv/archive/master.tar.gz -O master.tgz
-	tar -xzf master.tgz -C deps/mpv --strip-components=1
-	rm master.tgz
+	clone_revision "$v_ci_mpv_repo" "$v_ci_mpv" deps/mpv
 
 	msg "Trying to fetch existing prefix"
 	mkdir -p prefix
@@ -76,14 +85,14 @@ else
 fi
 
 msg "Building mpv"
-./buildall.sh -n mpv || {
+./buildall.sh --arch "$v_ci_arch" -n mpv || {
 	# show logfile if configure failed
-	[ ! -f deps/mpv/_build_armv7l/config.h ] && \
-		cat deps/mpv/_build_armv7l/meson-logs/meson-log.txt
+	[ ! -f deps/mpv/_build_${v_ci_arch}/config.h ] && \
+		cat deps/mpv/_build_${v_ci_arch}/meson-logs/meson-log.txt
 	exit 1
 }
 
 msg "Building mpv-android"
-./buildall.sh -n
+./buildall.sh --arch "$v_ci_arch" -n
 
 exit 0
