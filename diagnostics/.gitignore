@@ -1,7 +1,9 @@
 /media/
 /apks/
+/device-state/
+/logs/
+/vendor/
 *.mkv
 *.mp4
 *.m2ts
 *.ts
-
