@@ -9,14 +9,16 @@ fi
 
 input=$1
 output=$2
+filename=${input##*/}
 
 mkdir -p "$output"
 
 if command -v sha256sum >/dev/null 2>&1; then
-    sha256sum "$input" >"$output/sha256.txt"
+    hash=$(sha256sum "$input" | awk '{ print $1 }')
 else
-    sha256 -r "$input" >"$output/sha256.txt"
+    hash=$(sha256 -q "$input")
 fi
+printf '%s  %s\n' "$hash" "$filename" >"$output/sha256.txt"
 
 if command -v mediainfo >/dev/null 2>&1; then
     mediainfo "$input" >"$output/mediainfo.txt"
@@ -30,4 +32,3 @@ ffprobe -v error -show_streams -show_programs -show_chapters -show_format \
 
 ffprobe -v error -select_streams v:0 -show_frames -show_data -of json \
     "$input" >"$output/ffprobe-video-frames.json"
-
