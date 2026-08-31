@@ -159,6 +159,10 @@ abstract class BaseMPVView(context: Context, attrs: AttributeSet) : SurfaceView(
     private fun deactivateVo() {
         if (!voActive)
             return
+
+        MPVLib.getPropertyString("current-vo")
+            ?.takeIf { it.isNotBlank() && it != "null" }
+            ?.let { voInUse = it }
         MPVLib.setPropertyString("vo", "null")
         MPVLib.setPropertyString("force-window", "no")
         voActive = false
