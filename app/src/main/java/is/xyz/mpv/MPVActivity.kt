@@ -303,6 +303,7 @@ class MPVActivity : AppCompatActivity(), MPVLib.EventObserver, TouchGesturesObse
         }
 
         player.addObserver(this)
+        player.setDirectVideoSurface(binding.directVideoSurface)
         player.initialize(filesDir.path, cacheDir.path)
         player.playFile(filepath)
 

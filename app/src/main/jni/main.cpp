@@ -29,6 +29,7 @@ extern "C" {
 
 JavaVM *g_vm;
 mpv_handle *g_mpv;
+void release_render_surfaces(JNIEnv *env);
 std::atomic<bool> g_event_thread_request_exit(false);
 
 static pthread_t event_thread_id;
@@ -94,6 +95,7 @@ jni_func(void, destroy) {
 
     mpv_terminate_destroy(g_mpv);
     g_mpv = NULL;
+    release_render_surfaces(env);
 }
 
 jni_func(void, command, jobjectArray jarray) {

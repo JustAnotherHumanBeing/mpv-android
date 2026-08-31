@@ -5,6 +5,12 @@
     android:layout_height="match_parent"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
+    <SurfaceView
+        android:id="@+id/directVideoSurface"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone" />
+
     <is.xyz.mpv.MPVView
         android:id="@+id/player"
         android:layout_width="match_parent"
