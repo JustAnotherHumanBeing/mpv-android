@@ -38,7 +38,7 @@ case "$package" in
 esac
 
 case "$test_id" in
-    a|b|c|d) ;;
+    a|b|c|d|p7) ;;
     *)
         echo "unknown test ID: $test_id" >&2
         exit 64
