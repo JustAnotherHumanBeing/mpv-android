@@ -24,12 +24,10 @@ therefore explicitly opt-in and exploratory.
 ## Shield probe result
 
 The opt-in ARM64 probe used `vo=gpu-next`, `hwdec=mediacodec`, direct Nvidia
-Dolby Vision surface output, and disabled software fallback. During the
-physical test, the following all passed:
-
-- recognizable video with correct-looking colors and smooth motion;
-- visible mpv subtitles and OSD; and
-- activation of the LG television's Dolby Vision picture mode.
+Dolby Vision surface output, and disabled software fallback. The physical test
+failed: the television remained black and no video was visible. Consequently,
+color, motion, subtitle/OSD composition, and television Dolby Vision signaling
+were not validated.
 
 The diagnostic log proves that `OMX.Nvidia.DOVI.decode` received the original
 combined access units, including BL VCL, RPU NAL units, and EL NAL units. It
@@ -38,11 +36,11 @@ message. mpv's separate 1920x1080 enhancement-layer MediaCodec instance failed
 to configure, while the primary 3840x2160 Nvidia Dolby Vision instance
 continued successfully.
 
-Consequently, this is a successful Profile 7 compatibility-playback result,
-but it is not proof of full FEL reconstruction. The most defensible current
-interpretation is native Dolby Vision BL+RPU playback with the FEL residual
-possibly ignored. Correct-looking colors and the television's Dolby Vision
-indicator are insufficient to distinguish that result from full FEL output.
+The logs do not establish successful display. They show that the primary
+decoder accepted input and returned an initial MediaCodec frame, but they also
+show that Nvidia rejected Profile 64 internally and that mpv's enhancement
+layer decoder failed. The probe must therefore be treated as failed, not as
+Profile 7 compatibility playback or evidence of FEL reconstruction.
 
 Probe APK:
 
