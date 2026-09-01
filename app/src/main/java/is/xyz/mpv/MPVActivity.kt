@@ -73,6 +73,8 @@ class MPVActivity : AppCompatActivity(), MPVLib.EventObserver, TouchGesturesObse
 
     private var activityIsForeground = true
     private var didResumeBackgroundPlayback = false
+    // Resume a replacement file only when activity lifecycle handling paused active playback.
+    private var resumeAfterNewIntent = false
     private var userIsOperatingSeekbar = false
 
     private var toast: Toast? = null
@@ -389,6 +391,9 @@ class MPVActivity : AppCompatActivity(), MPVLib.EventObserver, TouchGesturesObse
             return
         }
 
+        val shouldResume = resumeAfterNewIntent
+        resumeAfterNewIntent = false
+
         if (!activityIsForeground && didResumeBackgroundPlayback) {
             if (this.newIntentReplace) {
                 MPVLib.command(arrayOf("loadfile", filepath, "replace"))
@@ -400,6 +405,11 @@ class MPVActivity : AppCompatActivity(), MPVLib.EventObserver, TouchGesturesObse
             moveTaskToBack(true)
         } else {
             MPVLib.command(arrayOf("loadfile", filepath))
+        }
+
+        if (shouldResume) {
+            Log.v(TAG, "Resuming playback after lifecycle pause")
+            player.paused = false
         }
     }
 
@@ -458,6 +468,7 @@ class MPVActivity : AppCompatActivity(), MPVLib.EventObserver, TouchGesturesObse
 
     private fun onPauseImpl() {
         val shouldBackground = shouldBackground()
+        resumeAfterNewIntent = false
         if (shouldBackground)
             BackgroundPlaybackService.grabThumbnail()
         else
@@ -473,6 +484,7 @@ class MPVActivity : AppCompatActivity(), MPVLib.EventObserver, TouchGesturesObse
             // preventing useless busywork
             MPVLib.command(arrayOf("stop"))
         } else if (!shouldBackground) {
+            resumeAfterNewIntent = player.paused == false
             player.paused = true
         }
         writeSettings()
@@ -485,6 +497,7 @@ class MPVActivity : AppCompatActivity(), MPVLib.EventObserver, TouchGesturesObse
             val serviceIntent = Intent(this, BackgroundPlaybackService::class.java)
             if (!tryStartForegroundService(serviceIntent)) {
                 didResumeBackgroundPlayback = false
+                resumeAfterNewIntent = player.paused == false
                 player.paused = true
             }
         }
@@ -550,6 +563,7 @@ class MPVActivity : AppCompatActivity(), MPVLib.EventObserver, TouchGesturesObse
     override fun onResume() {
         // If we weren't actually in the background (e.g. multi window mode), don't reinitialize stuff
         if (activityIsForeground) {
+            resumeAfterNewIntent = false
             super.onResume()
             return
         }
@@ -564,6 +578,7 @@ class MPVActivity : AppCompatActivity(), MPVLib.EventObserver, TouchGesturesObse
         readSettings()
 
         activityIsForeground = true
+        resumeAfterNewIntent = false
         // stop background service with a delay
         stopServiceHandler.removeCallbacks(stopServiceRunnable)
         stopServiceHandler.postDelayed(stopServiceRunnable, 1000L)
