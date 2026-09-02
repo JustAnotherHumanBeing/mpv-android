@@ -48,7 +48,7 @@ v_ci_ffmpeg=fe5154cc777f0d0a5286e2cb8a8c46ba3dbce719
 v_ci_mpv_repo=https://github.com/JustAnotherHumanBeing/mpv.git
 v_ci_mpv=4bd5caacd8a7d6f05832615913b7b3af73f6966f
 v_ci_libplacebo_repo=https://github.com/JustAnotherHumanBeing/libplacebo.git
-v_ci_libplacebo=3e6256cbd2f2f0defcde8626796bca3f4ceed780
+v_ci_libplacebo=f6f5f8eff599b78dcac28e1dc989b78c4c59b834
 
 # filename used to uniquely identify a build prefix
 ci_tarball="prefix-${v_ci_arch}-n${v_ndk}-l${v_lua}-u${v_unibreak}-h${v_harfbuzz}-fr${v_fribidi}-ft${v_freetype}-x${v_libxml2}-fo${v_fontconfig}-m${v_mbedtls}-c${v_curl}-ff${v_ci_ffmpeg:0:12}-lp${v_ci_libplacebo:0:12}.tgz"
