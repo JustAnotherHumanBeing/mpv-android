@@ -8,10 +8,10 @@ excluded from Git.
 
 | Component | Revision |
 | --- | --- |
-| mpv-android | `005f7e9db953d05d632562d0004c8a61362fb870` |
-| mpv | `a0f7fbc84bcfd9f03a5d06da52494d5cc5a892b6` |
-| FFmpeg | `a38ca389b1a6ca6a672591fda5b9f9d129b01d00` |
-| libplacebo | `b3ff1dbe73de8e75bda36836f7b1b5a2e00068f1` (7.371.0 base) |
+| mpv-android | `cccae4bdb3c75209e6847ecec3a7db0e160a24ad` |
+| mpv | `4bd5caacd8a7d6f05832615913b7b3af73f6966f` |
+| FFmpeg | `fe5154cc777f0d0a5286e2cb8a8c46ba3dbce719` |
+| libplacebo | `f6f5f8eff599b78dcac28e1dc989b78c4c59b834` (7.371.0 base) |
 | Android command-line tools | `11076708_latest` |
 | Android platform / compile SDK | 36 |
 | Android build tools | 36.0.0 |
@@ -19,14 +19,16 @@ excluded from Git.
 | Java | 17 (matching upstream CI) |
 
 The dependency download scripts pin all three native repositories. The
-validated ARM64 debug APK was produced by GitHub Actions run `33457649038`:
+validated ARM64 debug APK was produced by GitHub Actions run `33580556833`:
 
 ```text
 app-default-arm64-v8a-debug.apk
-SHA-256 b5dc489cc4217046804026d526abcf61df27b89cbcbae5e08181693608119e16
+SHA-256 d1babdb47c79f1fad226a406b0e89dc0f6754a62d698bf958eacdeaea19e6950
 ```
 
-The installed APK was pulled back from the Shield and matched this digest.
+The installed APK was pulled back from the Shield and matched this digest. Its
+unstripped ARM64 `libmpv.so` has SHA-256
+`6ca3bf74e0bab52666f30bf6b4dcbb3095168c75d60f3c21ee14d789b5a558a0`.
 
 ## Target
 
@@ -56,10 +58,12 @@ logo alone is not evidence that enhancement-layer data was reconstructed.
 
 The normal surface-decoder gate accepts only single-layer Profile 5 and
 Profile 8.1. An additional opt-in Profile 7 probe preserves combined BL+EL+RPU
-access units for Nvidia's proprietary decoder. A Profile 7.6 FEL file passed
-visible playback, subtitle/OSD, seeking, transition, and seven-minute soak
-checks. This establishes compatibility playback, not verified FEL residual
-reconstruction, and the stream is not silently converted to Profile 8.1.
+access units for Nvidia's proprietary decoder. Profile 7.6 FEL compatibility
+playback passed visible playback, subtitle/OSD, seeking, transition, and
+seven-minute soak checks, and the stream is not silently converted to Profile
+8.1. A dedicated residual test was run twice and did not display its
+FEL-decoded confirmation sentence. This is a definitive negative result for
+FEL residual reconstruction on the tested path, not complete FEL support.
 
 The reports and logs generated during testing belong in `reports/` and
 `logs/`. Test media belongs in `media/` and must never be committed.
@@ -70,7 +74,7 @@ The diagnostic branch builds only ARM64 and gives its debug APK the application
 ID `is.xyz.mpv.dovitest`, allowing it to coexist with the official app.
 
 ```sh
-git clone --branch dovi-shield-profile7-probe \
+git clone --branch dovi-shield-m2ts \
     https://github.com/JustAnotherHumanBeing/mpv-android.git
 cd mpv-android
 buildscripts/include/ci.sh install
@@ -119,6 +123,13 @@ ADB_SERIAL=shield-address:5555 ./diagnostics/soak-shield.sh \
     file:///sdcard/Movies/p5-smoke-s01e01-60s.mkv \
     diagnostics/logs/p5-copy-soak 30 5
 ```
+
+`test-b-final.conf` is the quiet, non-looping Profile 5 copy configuration
+used for final visual checks. `test-external-sampler.conf` disables the direct
+video overlay so an ordinary MediaCodec file exercises AImageReader and the
+external-texture shader path. `test-m2ts-eof.conf` starts the dual-PID M2TS
+sample near EOF to validate pairing, PGS subtitles, teardown, and natural
+completion without replaying the entire feature.
 
 See `RESULTS.md` for the validation record, modified-file explanation,
 limitations, rollback procedure, and upstreaming plan.

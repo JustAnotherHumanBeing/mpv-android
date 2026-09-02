@@ -11,13 +11,33 @@ Validated inputs:
 - single-layer Dolby Vision Profile 5 BL+RPU;
 - single-layer Dolby Vision Profile 8.1 BL+RPU, HDR10-compatible;
 - dual-layer Dolby Vision Profile 7 BL+EL+RPU compatibility playback;
+- dual-PID Dolby Vision Profile 7 M2TS compatibility playback;
 - HDR10 10-bit HEVC control;
 - SDR 10-bit HEVC control;
 - SDR 8-bit H.264 control;
 - embedded and external SubRip subtitles.
 
 The Profile 7 result validates compatibility playback through Nvidia's Dolby
-Vision decoder. It does not prove enhancement-layer residual reconstruction.
+Vision decoder. A dedicated Profile 7.6 FEL residual clip was run twice; its
+literal FEL-decoded confirmation sentence never appeared. The tested Shield
+path therefore does not reconstruct the FEL residual.
+
+### Final artifact
+
+GitHub Actions run `33580556833` built mpv-android commit
+`cccae4bdb3c75209e6847ecec3a7db0e160a24ad`. The resulting ARM64 debug APK has
+SHA-256
+`d1babdb47c79f1fad226a406b0e89dc0f6754a62d698bf958eacdeaea19e6950`;
+the APK pulled back from the Shield matched it byte-for-byte. The unstripped
+ARM64 `libmpv.so` has SHA-256
+`6ca3bf74e0bab52666f30bf6b4dcbb3095168c75d60f3c21ee14d789b5a558a0`.
+
+This rebuild differs from the full-matrix predecessor only by the final
+libplacebo GLSL extension-order correction. On the physical Shield it passed
+Profile 5 native-Surface and MediaCodec-copy checks, Profile 8.1 native-Surface
+playback, and ordinary SDR H.264 through MediaCodec's AImageReader external
+texture path. These checks covered both the Dolby direct-Surface path and the
+shader path changed in the rebuild.
 
 ## Results
 
@@ -28,6 +48,7 @@ Configuration:
 ```text
 vo=gpu-next
 hwdec=mediacodec-copy
+hwdec-software-fallback=no
 sid=1
 sub-font-size=27
 vd-lavc-o=dovi_p5_metadata=1
@@ -47,6 +68,10 @@ vd-lavc-o=dovi_p5_metadata=1
   below that peak, providing no evidence of unbounded per-loop growth.
 - The LG did not enter Dolby Vision mode. This is expected for libplacebo
   rendering through the ordinary GPU output path.
+- The final rebuilt APK repeated the Profile 5 copy test with correct colors,
+  smooth playback, and visible subtitles/OSD. Logs confirmed MediaCodec pixel
+  decoding, timestamp-matched Dolby metadata and RPU side data, and
+  gpu-next's Dolby Vision reshaping path.
 
 ### Profile 5 and Profile 8.1 native Surface
 
@@ -55,6 +80,7 @@ Configuration:
 ```text
 vo=gpu-next
 hwdec=mediacodec
+hwdec-software-fallback=no
 android-dovi-overlay=yes
 sid=1
 sub-font-size=27
@@ -72,6 +98,12 @@ vd-lavc-o=dovi_surface_decoder=1
 - A 30-minute Profile 8.1 feature playback remained active with no codec,
   application, OOM, or metadata-queue failure. PSS was not monotonic and ended
   below its warm-up peak, providing no evidence of unbounded growth.
+- The final rebuilt APK passed a cold-start Profile 5 run through natural EOF
+  with correct colors, smooth playback, visible subtitles/OSD, and LG Dolby
+  Vision signaling.
+- The same APK passed a cold-start Profile 8.1 regression with the same visual
+  results. Logs confirmed `OMX.Nvidia.DOVI.decode`, MediaCodec hardware output,
+  and the Android direct video Surface without a codec failure.
 
 ### Profile 7 native Surface compatibility
 
@@ -105,16 +137,63 @@ vd-lavc-o=dovi_surface_decoder=1,dovi_p7_surface_probe=1
   the short HDR10 control reached normal EOF.
 - A lifecycle fix resumes replacement playback only when Android itself paused
   an active file. A replacement inherited an explicit user pause as intended.
+- The full-matrix predecessor APK passed a cold-start Profile 7 compatibility
+  regression with correct colors, smooth playback, visible subtitles/OSD, and
+  LG Dolby Vision signaling. Logs confirmed the opt-in Profile 7 probe,
+  `OMX.Nvidia.DOVI.decode`, and the Android direct video Surface.
 
 These observations establish useful Profile 7 compatibility playback on this
-Shield. They do not establish whether Nvidia reconstructs the FEL residual, so
-this is not a claim of complete Profile 7 FEL decoding.
+Shield. They are not a claim of complete Profile 7 FEL decoding.
+
+### Profile 7 FEL residual result
+
+- The definitive sample was Profile 7.6 BL+EL+RPU with
+  `el_spatial_resampling_filter_flag=1` and `disable_residual_flag=0`.
+- Its SHA-256 is
+  `60d1a337a09609c639f8111685b59f89902cc79606f2bdf3a9c269cd0b508bfa`.
+- It displays `This device can decode FEL` only when the enhancement-layer
+  residual is reconstructed.
+- Two force-stopped native-Surface runs entered LG Dolby Vision mode and
+  reached normal EOF, but the sentence never appeared.
+
+This is a negative FEL residual reconstruction result. Profile 7 support in
+this work is limited to compatibility playback through Nvidia's proprietary
+decoder.
+
+### Dual-PID Profile 7 M2TS
+
+- The Troy UHD Blu-ray transport stream stores its base and enhancement
+  layers on separate PIDs.
+- mpv identified and merged BL PID `0x1011` with EL PID `0x1015` into bounded
+  combined access units for one Profile 7 decoder.
+- The tested APK selected `OMX.Nvidia.DOVI.decode`, the Android direct video
+  Surface, and embedded PGS subtitle track 1.
+- A physical near-EOF run showed correct colors, smooth playback, visible PGS
+  subtitles/OSD, and LG Dolby Vision signaling, then reported
+  `finished playback, success` at natural EOF.
+- Starting near the end briefly entered the DTS-HD stream before a core audio
+  frame and logged a recoverable decoder warning. Audio recovered; this was
+  not a Dolby Vision video or dual-PID merger failure.
 
 ### Controls
 
 HDR10 HEVC, SDR 10-bit HEVC, and SDR 8-bit H.264 remained recognizable and
 correct in both tested MediaCodec modes. The Dolby Surface path was not
 selected for those streams. External and embedded subtitles remained visible.
+
+The full-matrix predecessor APK repeated all three local controls successfully.
+HDR10 used
+`OMX.Nvidia.h265.decode`, looked correct, and activated only the television's
+HDR mode. SDR 10-bit HEVC used the same ordinary HEVC decoder, looked correct,
+and activated no HDR/Dolby mode. SDR 8-bit H.264 used
+`OMX.Nvidia.h264.decode`, looked correct, and activated no HDR/Dolby mode. All
+three reached `finished playback, success` at natural EOF.
+
+The final rebuilt APK repeated the SDR 8-bit H.264 control with
+`android-dovi-overlay=no`. It used MediaCodec hardware decoding and gpu-next's
+AImageReader external-texture path, displayed correct smooth video and
+subtitles/OSD, activated no HDR/Dolby mode, and reached natural EOF without a
+GLSL compile or link failure.
 
 ## Modified code
 
@@ -140,6 +219,8 @@ selected for those streams. External and embedded subtitles remained visible.
 - `options/options.c` and `.h`: expose the opt-in Android Dolby overlay mode.
 - `demux/dovi_split.c`, `demux/demux.c`, and `demux/demux.h`: expose an opt-in
   switch that preserves combined Profile 7 access units for a vendor decoder.
+- `demux/demux_lavf.c`: pairs bounded dual-PID Dolby Vision M2TS access units,
+  including reordered, duplicate, absent, and malformed timestamp handling.
 
 ### mpv-android
 
@@ -155,8 +236,9 @@ selected for those streams. External and embedded subtitles remained visible.
 
 ### libplacebo
 
-- `src/dispatch.c`: keeps external samplers out of raster vertex shaders so
-  the Android external-texture shader links correctly.
+- `src/dispatch.c`: keeps external samplers and declarations fragment-only and
+  emits required GLSL extension directives before declarations, so Android
+  external-texture shaders satisfy GLSL ES ordering and link requirements.
 
 ## Safety and lifetime checks
 
@@ -167,11 +249,22 @@ selected for those streams. External and embedded subtitles remained visible.
 - Direct MediaCodec frames are released exactly once.
 - Surface references are retained through decoder creation and released after
   decoder teardown.
-- Build warnings in modified files, `git diff --check`, shell syntax checks,
-  and libplacebo's ASan/UBSan test suite passed.
+- mpv's normal and UBSan suites passed all 39 tests. Focused normal and UBSan
+  tests covered reordered, duplicate, missing, and malformed dual-PID input.
+- Clang's static analyzer reported no finding in mpv's Dolby merger or
+  libplacebo's modified dispatch code.
+- All 15 applicable libplacebo normal and UBSan tests passed. An unrelated
+  Vulkan external-host-pointer test fails on this build host with
+  `VK_ERROR_INVALID_EXTERNAL_HANDLE` in both configurations.
+- `git diff --check`, shell syntax checks, and the final Android build passed.
 
-No ordinary-path leak, use-after-free, out-of-bounds access, or undefined
-varargs format mismatch remains in the audited changes.
+FreeBSD-hosted ASan could not be used for the mpv tests because its allocator
+aborted before test execution. No ASan result is claimed.
+
+The audit and exercised tests found no ordinary-path leak, use-after-free,
+out-of-bounds access, undefined arithmetic, or varargs format mismatch in the
+modified code. This is a bounded engineering conclusion, not a claim that
+unexercised device- or driver-specific behavior cannot contain defects.
 
 ## Known limitations
 
@@ -179,8 +272,10 @@ varargs format mismatch remains in the audited changes.
   BL+RPU.
 - Native Surface decoding is opt-in and tested only with Profile 5, Profile
   8.1, and one combined-access-unit Profile 7.6 stream on the Shield decoder.
-- Profile 7 split BL/EL decoding, dual-track Dolby Vision, and verified FEL
-  residual reconstruction are unsupported.
+- Profile 7 split BL/EL decoding and FEL residual reconstruction are
+  unsupported. Dual-PID M2TS input is merged into bounded combined access
+  units for Nvidia compatibility playback; this does not add FEL residual
+  reconstruction.
 - The copy path renders corrected pixels but does not provide native Dolby
   Vision HDMI signaling.
 - Native Surface results depend on Nvidia's proprietary decoder and are not
@@ -212,5 +307,5 @@ varargs format mismatch remains in the audited changes.
 4. Submit the mpv Android overlay contract together with the mpv-android
    Surface ownership and lifecycle implementation.
 5. Keep Nvidia native Dolby profile selection opt-in until it has wider device
-   coverage. Keep Profile 7 preservation experimental until FEL reconstruction
-   can be verified independently of plausible output and television signaling.
+   coverage. Keep Profile 7 preservation experimental and explicitly limited
+   to compatibility playback because the FEL residual test failed.
